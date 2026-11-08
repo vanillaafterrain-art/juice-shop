@@ -135,7 +135,7 @@ void describe('insecurity', () => {
     })
 
     void it('can be bypassed by exploiting lack of recursive sanitization', () => {
-      assert.equal(security.sanitizeHtml('<<script>Foo</script>iframe src="javascript:alert(`xss`)">'), '<iframe src="javascript:alert(`xss`)">')
+      assert.equal(security.sanitizeHtml('<<script>Foo</script>iframe src="javascript:alert(`xss`)">'), '&lt;iframe src="javascript:alert(`xss`)"&gt;')
     })
   })
 
@@ -184,7 +184,7 @@ void describe('insecurity', () => {
     })
 
     void it('cannot be bypassed by exploiting lack of recursive sanitization', () => {
-      assert.equal(security.sanitizeSecure('Bla<<script>Foo</script>iframe src="javascript:alert(`xss`)">Blubb'), 'BlaBlubb')
+      assert.equal(security.sanitizeSecure('Bla<<script>Foo</script>iframe src="javascript:alert(`xss`)">Blubb'), 'Bla&lt;iframe src="javascript:alert(`xss`)"&gt;Blubb')
     })
   })
 
