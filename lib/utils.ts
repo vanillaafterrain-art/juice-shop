@@ -7,7 +7,8 @@ import packageJson from '../package.json'
 import fs from 'node:fs'
 import logger from './logger'
 import config from 'config'
-import download from 'download'
+import http from 'node:http'
+import https from 'node:https'
 import { ProxyAgent } from 'proxy-agent'
 import crypto from 'node:crypto'
 import clarinet from 'clarinet'
@@ -107,10 +108,30 @@ export const extractFilename = (url: string) => {
   return file
 }
 
+const fetchBuffer = async (url: string, options: { agent?: any } = {}): Promise<Buffer> => await new Promise((resolve, reject) => {
+  const client = url.startsWith('https:') ? https : http
+  client.get(url, { agent: options.agent }, (res) => {
+    if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+      res.resume()
+      fetchBuffer(new URL(res.headers.location, url).toString(), options).then(resolve, reject)
+      return
+    }
+    if (!res.statusCode || res.statusCode >= 400) {
+      res.resume()
+      reject(new Error('HTTP ' + res.statusCode))
+      return
+    }
+    const chunks: Buffer[] = []
+    res.on('data', (chunk: Buffer) => chunks.push(chunk))
+    res.on('end', () => resolve(Buffer.concat(chunks)))
+    res.on('error', reject)
+  }).on('error', reject)
+})
+
 export const downloadToFile = async (
   url: string,
   dest: string,
-  downloadData: (url: string, options: download.DownloadOptions) => Promise<Buffer> = download
+  downloadData: (url: string, options: { agent?: any }) => Promise<Buffer> = fetchBuffer
 ) => {
   try {
     const data = await downloadData(url, { agent: proxyAgent })

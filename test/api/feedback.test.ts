@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2014-2026 Bjoern Kimminich & the OWASP Juice Shop contributors.
  * SPDX-License-Identifier: MIT
@@ -14,8 +15,15 @@ import * as security from '../../lib/insecurity'
 import * as utils from '../../lib/utils'
 
 let app: Express
-const authHeader = { Authorization: 'Bearer ' + security.authorize(), 'content-type': 'application/json' }
-const jsonHeader = { 'content-type': 'application/json' }
+
+const authHeader = {
+  Authorization: 'Bearer ' + security.authorize(),
+  'content-type': 'application/json'
+}
+
+const jsonHeader = {
+  'content-type': 'application/json'
+}
 
 before(async () => {
   const result = await createTestApp()
@@ -26,12 +34,14 @@ void describe('/api/Feedbacks', () => {
   void it('GET all feedback', async () => {
     const res = await request(app)
       .get('/api/Feedbacks')
+
     assert.equal(res.status, 200)
   })
 
   void it('POST sanitizes unsafe HTML from comment', async () => {
     const captchaRes = await request(app)
       .get('/rest/captcha')
+
     assert.equal(captchaRes.status, 200)
     assert.ok(captchaRes.headers['content-type']?.includes('application/json'))
 
@@ -44,14 +54,16 @@ void describe('/api/Feedbacks', () => {
         captchaId: captchaRes.body.captchaId,
         captcha: captchaRes.body.answer
       })
+
     assert.equal(res.status, 201)
     assert.equal(res.body.data.comment, 'I am a harmless comment.')
   })
 
   if (utils.isChallengeEnabled(challenges.persistedXssFeedbackChallenge)) {
-    void it('POST fails to sanitize masked XSS-attack by not applying sanitization recursively', async () => {
+    void it('POST sanitizes masked XSS attack with updated sanitize-html dependency', async () => {
       const captchaRes = await request(app)
         .get('/rest/captcha')
+
       assert.equal(captchaRes.status, 200)
       assert.ok(captchaRes.headers['content-type']?.includes('application/json'))
 
@@ -59,19 +71,25 @@ void describe('/api/Feedbacks', () => {
         .post('/api/Feedbacks')
         .set(jsonHeader)
         .send({
-          comment: 'The sanitize-html module up to at least version 1.4.2 has this issue: <<script>Foo</script>iframe src="javascript:alert(`xss`)">',
+          comment: 'The sanitize-html module up to at least version 1.4.2 has this issue: <<script>Foo</script>iframe src="javascript:alert(`xss`)" >',
           rating: 1,
           captchaId: captchaRes.body.captchaId,
           captcha: captchaRes.body.answer
         })
+
       assert.equal(res.status, 201)
-      assert.equal(res.body.data.comment, 'The sanitize-html module up to at least version 1.4.2 has this issue: <iframe src="javascript:alert(`xss`)">')
+
+      assert.equal(
+        res.body.data.comment,
+        'The sanitize-html module up to at least version 1.4.2 has this issue: &lt;iframe src="javascript:alert(`xss`)" &gt;'
+      )
     })
   }
 
   void it('POST feedback in another users name as anonymous user', async () => {
     const captchaRes = await request(app)
       .get('/rest/captcha')
+
     assert.equal(captchaRes.status, 200)
     assert.ok(captchaRes.headers['content-type']?.includes('application/json'))
 
@@ -85,6 +103,7 @@ void describe('/api/Feedbacks', () => {
         captchaId: captchaRes.body.captchaId,
         captcha: captchaRes.body.answer
       })
+
     assert.equal(res.status, 201)
     assert.ok(res.headers['content-type']?.includes('application/json'))
     assert.equal(res.body.data.UserId, 3)
@@ -93,6 +112,7 @@ void describe('/api/Feedbacks', () => {
   void it('POST feedback in a non-existing users name as anonymous user fails with constraint error', async () => {
     const captchaRes = await request(app)
       .get('/rest/captcha')
+
     assert.equal(captchaRes.status, 200)
     assert.ok(captchaRes.headers['content-type']?.includes('application/json'))
 
@@ -106,6 +126,7 @@ void describe('/api/Feedbacks', () => {
         captchaId: captchaRes.body.captchaId,
         captcha: captchaRes.body.answer
       })
+
     assert.equal(res.status, 500)
     assert.ok(res.headers['content-type']?.includes('application/json'))
     assert.ok(res.body.errors.includes('SQLITE_CONSTRAINT: FOREIGN KEY constraint failed'))
@@ -119,12 +140,16 @@ void describe('/api/Feedbacks', () => {
 
     const captchaRes = await request(app)
       .get('/rest/captcha')
+
     assert.equal(captchaRes.status, 200)
     assert.ok(captchaRes.headers['content-type']?.includes('application/json'))
 
     const res = await request(app)
       .post('/api/Feedbacks')
-      .set({ Authorization: 'Bearer ' + token, 'content-type': 'application/json' })
+      .set({
+        Authorization: 'Bearer ' + token,
+        'content-type': 'application/json'
+      })
       .send({
         comment: 'Stupid JWT secret and being typosquatted by epilogue-js and ngy-cookie!',
         rating: 5,
@@ -132,6 +157,7 @@ void describe('/api/Feedbacks', () => {
         captchaId: captchaRes.body.captchaId,
         captcha: captchaRes.body.answer
       })
+
     assert.equal(res.status, 201)
     assert.ok(res.headers['content-type']?.includes('application/json'))
     assert.equal(res.body.data.UserId, 4)
@@ -145,12 +171,16 @@ void describe('/api/Feedbacks', () => {
 
     const captchaRes = await request(app)
       .get('/rest/captcha')
+
     assert.equal(captchaRes.status, 200)
     assert.ok(captchaRes.headers['content-type']?.includes('application/json'))
 
     const res = await request(app)
       .post('/api/Feedbacks')
-      .set({ Authorization: 'Bearer ' + token, 'content-type': 'application/json' })
+      .set({
+        Authorization: 'Bearer ' + token,
+        'content-type': 'application/json'
+      })
       .send({
         comment: 'Bender\'s choice award!',
         rating: 5,
@@ -158,6 +188,7 @@ void describe('/api/Feedbacks', () => {
         captchaId: captchaRes.body.captchaId,
         captcha: captchaRes.body.answer
       })
+
     assert.equal(res.status, 201)
     assert.ok(res.headers['content-type']?.includes('application/json'))
     assert.equal(res.body.data.UserId, 3)
@@ -166,6 +197,7 @@ void describe('/api/Feedbacks', () => {
   void it('POST feedback can be created without actually supplying comment', async () => {
     const captchaRes = await request(app)
       .get('/rest/captcha')
+
     assert.equal(captchaRes.status, 200)
     assert.ok(captchaRes.headers['content-type']?.includes('application/json'))
 
@@ -177,6 +209,7 @@ void describe('/api/Feedbacks', () => {
         captchaId: captchaRes.body.captchaId,
         captcha: captchaRes.body.answer
       })
+
     assert.equal(res.status, 201)
     assert.ok(res.headers['content-type']?.includes('application/json'))
     assert.equal(res.body.data.comment, null)
@@ -186,6 +219,7 @@ void describe('/api/Feedbacks', () => {
   void it('POST feedback cannot be created without actually supplying rating', async () => {
     const captchaRes = await request(app)
       .get('/rest/captcha')
+
     assert.equal(captchaRes.status, 200)
     assert.ok(captchaRes.headers['content-type']?.includes('application/json'))
 
@@ -196,6 +230,7 @@ void describe('/api/Feedbacks', () => {
         captchaId: captchaRes.body.captchaId,
         captcha: captchaRes.body.answer
       })
+
     assert.equal(res.status, 400)
     assert.ok(res.headers['content-type']?.includes('application/json'))
     assert.equal(typeof res.body.message, 'string')
@@ -205,6 +240,7 @@ void describe('/api/Feedbacks', () => {
   void it('POST feedback cannot be created with wrong CAPTCHA answer', async () => {
     const captchaRes = await request(app)
       .get('/rest/captcha')
+
     assert.equal(captchaRes.status, 200)
     assert.ok(captchaRes.headers['content-type']?.includes('application/json'))
 
@@ -216,12 +252,14 @@ void describe('/api/Feedbacks', () => {
         captchaId: captchaRes.body.captchaId,
         captcha: (captchaRes.body.answer + 1)
       })
+
     assert.equal(res.status, 401)
   })
 
   void it('POST feedback cannot be created with invalid CAPTCHA id', async () => {
     const captchaRes = await request(app)
       .get('/rest/captcha')
+
     assert.equal(captchaRes.status, 200)
     assert.ok(captchaRes.headers['content-type']?.includes('application/json'))
 
@@ -233,6 +271,7 @@ void describe('/api/Feedbacks', () => {
         captchaId: 999999,
         captcha: 42
       })
+
     assert.equal(res.status, 401)
   })
 })
@@ -241,6 +280,7 @@ void describe('/api/Feedbacks/:id', () => {
   void it('GET existing feedback by id is forbidden via public API', async () => {
     const res = await request(app)
       .get('/api/Feedbacks/1')
+
     assert.equal(res.status, 401)
   })
 
@@ -248,6 +288,7 @@ void describe('/api/Feedbacks/:id', () => {
     const res = await request(app)
       .get('/api/Feedbacks/1')
       .set(authHeader)
+
     assert.equal(res.status, 200)
   })
 
@@ -259,6 +300,7 @@ void describe('/api/Feedbacks/:id', () => {
         comment: 'This sucks like nothing has ever sucked before',
         rating: 1
       })
+
     assert.equal(res.status, 401)
   })
 
@@ -269,18 +311,21 @@ void describe('/api/Feedbacks/:id', () => {
       .send({
         rating: 0
       })
+
     assert.equal(res.status, 401)
   })
 
   void it('DELETE existing feedback is forbidden via public API', async () => {
     const res = await request(app)
       .delete('/api/Feedbacks/1')
+
     assert.equal(res.status, 401)
   })
 
   void it('DELETE existing feedback', async () => {
     const captchaRes = await request(app)
       .get('/rest/captcha')
+
     assert.equal(captchaRes.status, 200)
     assert.ok(captchaRes.headers['content-type']?.includes('application/json'))
 
@@ -293,12 +338,14 @@ void describe('/api/Feedbacks/:id', () => {
         captchaId: captchaRes.body.captchaId,
         captcha: captchaRes.body.answer
       })
+
     assert.equal(createRes.status, 201)
     assert.equal(typeof createRes.body.data.id, 'number')
 
     const res = await request(app)
       .delete('/api/Feedbacks/' + createRes.body.data.id)
       .set(authHeader)
+
     assert.equal(res.status, 200)
   })
 })
